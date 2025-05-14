@@ -155,18 +155,18 @@ def agregar_producto(request, id):
 def eliminar_producto(request, id):
     carrito = Carrito(request)
     producto = Producto.objects.get(idProducto=id)
-    carrito.remove(producto)
+    carrito.eliminar(producto)
     return redirect('tienda')
 
 def restar_producto(request, id):
     carrito = Carrito(request)
     producto = Producto.objects.get(idProducto=id)
-    carrito.decrement(producto)
+    carrito.restar(producto)
     return redirect('tienda')
 
 def limpiar_carrito(request):
     carrito = Carrito(request)
-    carrito.clear() 
+    carrito.limpiar() 
     return redirect('tienda')
 
 def generarBoleta(request):

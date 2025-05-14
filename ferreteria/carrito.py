@@ -38,14 +38,22 @@ class Carrito:
             self.guardar_carrito()
     
     def restar (self,producto):
-        for key, value in self.carrito.items():
-            if key == producto.idProducto:
-                value["cantidad"] = value["cantidad"]-1
-                value["total"] = int(value["total"])- producto.precio
-                if value["cantidad"] < 1:   
-                    self.eliminar(producto)
-                break
-        self.guardar_carrito()
+        idProducto = str(producto.idProducto)
+        if idProducto in self.carrito:
+            self.carrito[idProducto]["cantidad"] -= 1
+            self.carrito[idProducto]["total"] -= producto.precio
+            if self.carrito[idProducto]["cantidad"] < 1:
+                self.eliminar(producto)
+            self.guardar_carrito()
+        # for key, value in self.carrito.items():
+        #     if key in self.carrito:
+        #         self.carrito[key]["cantidad"]
+        #         value["cantidad"] = value["cantidad"]-1
+        #         value["total"] = int(value["total"])- producto.precio
+        #         if value["cantidad"] < 1:   
+        #             self.eliminar(producto)
+        #         break
+        # self.guardar_carrito()
      
     def limpiar(self):
         self.session["carrito"]={}
