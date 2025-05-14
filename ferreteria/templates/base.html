@@ -21,23 +21,23 @@
             
             <ul class="links">
                 {% if not user.is_authenticated %}
-                    <li><a href="{% url 'index' %}" target="_blank" >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}" target="_blank" >Sobre nosotros</a></li>
-                    <li><a href="{% url 'productos' %}" target="_blank" >Productos</a></li>
-                    <li><a href="{% url 'registrar' %}" target="_blank">Registrarse</a></li>
-                    <li><a href="{% url 'login' %}" target="_blank">Iniciar sesión</a></li>
+                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
+                    <li><a href="{% url 'nosotros' %}" >Sobre nosotros</a></li>
+                    <li><a href="{% url 'productos' %}"  >Productos</a></li>
+                    <li><a href="{% url 'registrar' %}" >Registrarse</a></li>
+                    <li><a href="{% url 'login' %}" >Iniciar sesión</a></li>
                 {% elif user.is_authenticated and user.is_superuser %}
-                    <li><a href="{% url 'index' %}" target="_blank" >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}" target="_blank" >Sobre nosotros</a></li>
-                    <li><a href="{% url 'productos' %}" target="_blank" >Productos</a></li>
-                    <li><a href="{% url 'lista' %}" target="_blank">Lista productos</a></li>
+                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
+                    <li><a href="{% url 'nosotros' %}" >Sobre nosotros</a></li>
+                    <li><a href="{% url 'productos' %}"  >Productos</a></li>
+                    <li><a href="{% url 'lista' %}" >Lista productos</a></li>
                     <li><a href="{% url 'perfil' %}">Bienvenid@ {{ user.username }} Perfil Admin: {{ user.email }}</a></li>
                     <li><a href="{% url 'cerrar' %}">Cerrar sesión </a></li>
                 {% elif user.is_authenticated and not user.is_superuser %}
                     <li><a href="#">Bienvenid@ {{ user.username }} </a></li>
-                    <li><a href="{% url 'index' %}" target="_blank" >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}" target="_blank" >Sobre nosotros</a></li>
-                    <li><a href="{% url 'productos' %}" target="_blank" >Productos</a></li>
+                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
+                    <li><a href="{% url 'nosotros' %}"  >Sobre nosotros</a></li>
+                    <li><a href="{% url 'productos' %}"  >Productos</a></li>
                     <li><a href="{% url 'cerrar' %}">Cerrar sesión</a></li>
                     <li><a href="{% url 'perfil' %}">Perfil: {{ user.email }}</a></li>   
                 {% endif %}
