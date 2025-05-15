@@ -10,7 +10,10 @@ from .serializers import ProductoSerializer
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views.generic import CreateView
 from django.contrib.auth.models import User
-
+from django.core.mail import send_mail
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.shortcuts import render
 
 # Create your views here.
 
@@ -192,3 +195,15 @@ def generarBoleta(request):
     carrito = Carrito(request)
     carrito.limpiar()
     return render(request, 'detallecarrito.html',datos)
+
+def enviar_correo(request):
+    if request.method == 'POST':
+        send_mail(
+            subject='Asunto del correo',
+            message='Este es el cuerpo del correo',
+            from_email='pruebaskk1221@gmail.com',
+            recipient_list=['kkroto1221@correo.com'],
+            fail_silently=False,
+        )
+        return HttpResponseRedirect(reverse('correo_enviado')) 
+    return render(request, 'enviar.html')

@@ -1,6 +1,5 @@
 import datetime
 from django.db import models
-from distutils.command.upload import upload
 
 # Create your models here.
 class Categoria(models.Model):
