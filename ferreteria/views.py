@@ -148,11 +148,15 @@ def tienda(request):
     productos = Producto.objects.all()
     return render(request, 'tienda.html', {'productos': productos})
     
-
+#Carrito
 def agregar_producto(request, id):
     carrito = Carrito(request)
     producto = Producto.objects.get(idProducto=id)
-    carrito.agregar(producto)
+    if producto.stock > 0:
+        carrito.agregar(producto)
+        messages.success(request, "Producto añadido al carrito.")
+    else:
+        messages.error(request, "No hay suficiente stock.")
     return redirect('tienda')
 
 def eliminar_producto(request, id):
@@ -172,19 +176,33 @@ def limpiar_carrito(request):
     carrito.limpiar() 
     return redirect('tienda')
 
+#boleta
 def generarBoleta(request):
     precio_total=0
+    productos = []
+
+    #Calculo de precio
     for key, value in request.session['carrito'].items():
         precio_total = precio_total + int(value['precio']) * int(value['cantidad'])
     boleta = Boleta(total = precio_total)
     boleta.save()
-    productos = []
+
+    #Validar stock 
+    for key, value in request.session['carrito'].items():
+        producto = Producto.objects.get(idProducto=value['producto_id'])
+        if producto.stock < value['cantidad']:
+            messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
+            return redirect('tienda')
+
+    #Detalle boleta
     for key, value in request.session['carrito'].items():
             producto = Producto.objects.get(idProducto = value['producto_id'])
             cant = value['cantidad']
             subtotal = cant * int(value['precio'])
             detalle = detalle_boleta(id_boleta = boleta, id_producto = producto, cantidad = cant, subtotal = subtotal)
             detalle.save()
+            producto.stock -= cant
+            producto.save()
             productos.append(detalle)
     datos={
         'productos':productos,
@@ -196,6 +214,7 @@ def generarBoleta(request):
     carrito.limpiar()
     return render(request, 'detallecarrito.html',datos)
 
+#Correo
 def enviar_correo(request):
     if request.method == 'POST':
         send_mail(
