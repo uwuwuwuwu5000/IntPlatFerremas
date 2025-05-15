@@ -15,15 +15,16 @@ class Carrito:
                 "precio": str (producto.precio),
                 "cantidad": 1,
                 "total": producto.precio,
-
             }
         else:
-            for key, value in self.carrito.items():
-                if key==producto.idProducto:
-                    value["cantidad"] = value["cantidad"]+1
-                    value["precio"] = producto.precio
-                    value["total"]= value["total"] + producto.precio
-                    break
+            self.carrito[producto.idProducto]["cantidad"] += 1
+            self.carrito[producto.idProducto]["total"] += producto.precio
+            # for key, value in self.carrito.items():
+            #     if key==producto.idProducto:
+            #         value["cantidad"] = value["cantidad"]+1
+            #         value["precio"] = producto.precio
+            #         value["total"]= value["total"] + producto.precio
+            #         break
         self.guardar_carrito()
 
 
@@ -58,3 +59,10 @@ class Carrito:
     def limpiar(self):
         self.session["carrito"]={}
         self.session.modified=True 
+    
+    def calcularTotal(self):
+        total = 0
+        for i in self.carrito():
+            if i > 0:
+                total =+ self.carrito[i]["total"]
+        return total

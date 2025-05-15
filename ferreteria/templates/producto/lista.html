@@ -39,6 +39,7 @@
                     <th>Idproducto</th>
                     <th>Nombre</th>
                     <th>Precio</th>
+                    <th>Stock</th>
                     <th>Imagen</th>
                     <th>Modificar</th>
                     <th>Eliminar</th>
@@ -49,6 +50,7 @@
                     <td><a href="{% url 'detalle' p.idProducto %}" class="btn btn-outline-success"> {{p.idProducto}}</a></td>
                     <td> {{ p.nombre }}</td>
                     <td> {{ p.precio | intcomma }}</td>
+                    <td>{{p.stock}}</td>
                     <td>
                         <img src="{{ p.imagen.url }}" style="height: 60px; width: 60px;">
                     </td>
