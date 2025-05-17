@@ -9,6 +9,7 @@
         </thead>
         <tbody>
             {% if request.session.carrito.items %}
+            
                 {% for key, value in request.session.carrito.items %} 
                     <tr>
                         <td style="font-size:13px">{{ value.nombre }}</td>
@@ -20,10 +21,14 @@
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row">Total : </th>
-                        <td colspan="2">$ {{value.total}}</td>
+                        <th scope="row">Subtotal : </th>
+                        <td colspan="2">$ {{value.total }}</td>
+                        
                     </tr>
                 {% endfor %}
+                    <tr>
+                        <th scope="row">Total: {{ totalCarrito|intcomma }}  </th>
+                    </tr>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -42,13 +47,34 @@
             {% endif %}
         </tbody>
     </table>
+    <form method="POST" action="{% url 'generarPedido' %}">
+  {% csrf_token %}
+
+ <div class="bg-light p-3 rounded">
+  <!-- Tipo de entrega -->
+  <div>
+    <label><strong>Tipo de entrega:</strong></label><br>
+    <input type="radio" name="tipo_envio" value="retiro" checked> Retiro en tienda (Sin costo)<br>
+    <input type="radio" name="tipo_envio" value="domicilio"> Despacho a domicilio ($5.000)<br>
+  </div>
+
+  <!-- Medio de pago -->
+  <div>
+    <label><strong>Medio de pago:</strong></label><br>
+    <input type="radio" name="medio_pago" value="tarjeta" checked> Tarjeta<br>
+    <input type="radio" name="medio_pago" value="transferencia"> Transferencia<br>
+  </div>
+</div>
+
+  <br>
+  <div class="row text-center" >
+        <button type="submit" class="btn btn-success ml-3 mr-2">Confirmar pedido</button>
+        <a href="{% url 'cls' %}" class="btn btn-warning">Limpiar</a> 
+    </div> 
+</form>
     <hr>
 </div>
-<div class="row text-center">
-    <div class="col-6">
-        <a href="{% url 'cls' %}" class="btn btn-outline-warning">Limpiar</a> 
-       </div> 
        <div class="col-6">
-        <a href="{% url 'generarBoleta' %}" class="btn btn-outline-primary">Comprar</a>
+        <!-- <a href="{% url 'generarPedido' %}" class="btn btn-outline-primary">Comprar</a> -->
     </div>
 </div>

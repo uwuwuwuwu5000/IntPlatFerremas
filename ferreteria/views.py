@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout, authenticate, login
-from .models import Boleta, Producto, Categoria, detalle_boleta
+from .models import Boleta, Producto, Categoria, detalle_boleta, Pedido, DetallePedido
 from ferreteria.carrito import Carrito
 from .forms import ContactoForm, CustomUserProfileForm, ProductoForm, CustomUserCreationForm
 from django.contrib import messages
@@ -226,3 +226,65 @@ def enviar_correo(request):
         )
         return HttpResponseRedirect(reverse('correo_enviado')) 
     return render(request, 'enviar.html')
+
+#Pedido
+def generarPedido(request):
+    precio_total=0
+    productos = []
+    carrito = request.session.get('carrito', {})
+
+    #Validar carrito vacio
+    if not carrito:
+        messages.error(request, "No puedes realizar una compra con el carrito vacío.")
+        return redirect('tienda') 
+
+    tipo_envio = request.POST.get('tipo_envio')
+    medio_pago = request.POST.get('medio_pago')
+
+    #Calculo de precio
+    for key, value in request.session['carrito'].items():
+        precio_total += int(value['precio']) * int(value['cantidad'])
+
+    if tipo_envio == 'domicilio':
+        precio_total += 5000
+
+    #Crear un pedido
+    pedido_obj = Pedido.objects.create(
+        user = request.user,
+        estado = 'creado',
+        tipo_envio=tipo_envio,
+        tipo_pago=medio_pago,
+        total = precio_total
+    )
+
+    #Validar stock 
+    for key, value in request.session['carrito'].items():
+        producto = Producto.objects.get(idProducto=value['producto_id'])
+        if producto.stock < value['cantidad']:
+            messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
+            return redirect('tienda')
+
+    #Detalle pedido
+    for key, value in request.session['carrito'].items():
+            producto = Producto.objects.get(idProducto = value['producto_id'])
+            cant = value['cantidad']
+            subtotal = cant * int(value['precio'])
+            detalle = DetallePedido.objects.create(
+                 id_pedido=pedido_obj,
+                 id_producto = producto,
+                 cantidad=cant,
+                 subtotal=subtotal
+            )
+            producto.stock -= cant
+            producto.save()
+            productos.append(detalle)
+    datos={
+        'productos':productos,
+        'fecha':pedido_obj.fecha_compra,
+        'tipo_envio':pedido_obj.tipo_envio,
+        'total': pedido_obj.total
+    }
+    request.session['id_pedido'] = pedido_obj.id_pedido
+    carrito = Carrito(request)
+    carrito.limpiar()
+    return render(request, 'detallecarrito.html',datos)

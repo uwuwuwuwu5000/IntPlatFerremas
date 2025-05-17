@@ -25,6 +25,7 @@
                                     <p class="card-text">{{ p.categoria }}</p>
                                     <p class="card-text">${{ p.precio | intcomma}}</p>
                                     <a href="{% url 'add' p.idProducto%}" class="btn btn-success">Agregar al carrito</a>
+                                    <a href="{% url 'detalle' p.idProducto %}" class="btn btn-success">Ver detalles</a>
                                     <br>
                                 </div> 
                                 <br>
