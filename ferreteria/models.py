@@ -1,5 +1,6 @@
 import datetime
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Categoria(models.Model):
@@ -57,3 +58,42 @@ class detalle_boleta(models.Model):
 
     def __str__(self):
         return str(self.id_detalle_boleta)
+    
+class Pedido(models.Model):
+    id_pedido = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    fecha_compra = models.DateTimeField(auto_now_add=True)
+    ESTADOS_PEDIDO = [
+        ('creado', 'Creado'),
+        ('pagado', 'Pagado'),
+        ('rechazado','Pago Rechazado'),
+        ('preparando', 'Preparando orden'),
+        ('despachado', 'Despachado'),
+        ('entregado', 'Entregado'),
+    ]
+    estado = models.CharField(max_length=20, choices = ESTADOS_PEDIDO, default='creado')
+
+    OPCIONES_ENVIO = [
+        ('retiro', 'Retiro en tienda ($0)'),
+        ('domicilio', 'Despacho a domicilio ($5.000)'),
+    ]
+    tipo_envio = models.CharField(max_length=20, choices=OPCIONES_ENVIO,default='retiro')
+    TIPO_PAGO = [
+        ('transferencia', 'Transferencia'),
+        ('tarjeta', 'Tarjeta'),
+    ]
+    tipo_pago = models.CharField(max_length=20,choices=TIPO_PAGO,default='transferencia')
+    total = models.BigIntegerField()
+    def __str__(self):
+        return str(self.id_pedido)
+
+class DetallePedido(models.Model):
+    id_pedido = models.ForeignKey('Pedido',on_delete=models.CASCADE,blank=True)
+    id_detalle_pedido= models.AutoField(primary_key=True)
+    id_producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
+    cantidad = models.IntegerField()
+    subtotal = models.BigIntegerField()
+
+    def __str__(self):
+        return str(self.id_detalle_pedido)
+

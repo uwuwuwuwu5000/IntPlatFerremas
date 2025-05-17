@@ -20,6 +20,7 @@ urlpatterns=[
     path('restar/<id>', views.restar_producto, name="sub"),
     path('limpiar/', views.limpiar_carrito, name="cls"),
     path('generarBoleta/', views.generarBoleta,name="generarBoleta"),
+    path('generarPedido/', views.generarPedido,name="generarPedido"),
 
     path('nosotros/', views.nosotros, name="nosotros"),
     path('productos/', views.productos, name="productos"),

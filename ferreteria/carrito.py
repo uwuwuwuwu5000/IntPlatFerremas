@@ -1,3 +1,5 @@
+from django.shortcuts import render
+
 class Carrito:
     def __init__(self, request):
         self.request = request
@@ -62,7 +64,7 @@ class Carrito:
     
     def calcularTotal(self):
         total = 0
-        for i in self.carrito():
-            if i > 0:
-                total =+ self.carrito[i]["total"]
+        for item in self.carrito.values():
+            total += int(item["total"])
         return total
+    
