@@ -17,8 +17,7 @@ class BancoCentralAPI:
             "enddate": end_date,
             "output": "json"
         }
-
-        # Imprimir la URL generada para verificar los parámetros
+        
         url = requests.Request('GET', self.BASE_URL, params=params).prepare().url
         print(f"URL generada: {url}")
 
