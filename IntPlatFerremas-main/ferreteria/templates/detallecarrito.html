@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+{% endblock %}
+{% block contenido %}
+{% load humanize %}
+<div class="container">
+    <div class="card">
+        <h3> Detalle de Compra </h3><br><h6>Fecha: {{ fecha }}</h6>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código Boleta</th>
+                    <th>Código Producto</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in productos%}
+                <tr>
+                    <td>{{ prod.id_boleta }}</td>
+                    <td>{{ prod.id_producto }}</td>
+                    <td>{{ prod.cantidad }}</td>
+                    <td>{{ prod.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            
+            <tr><td><h6>Total Compra: {{ total }}</h6></td>
+            </tr>
+        </table>
+    </div>
+    <br>
+</div>
+{% endblock %}
