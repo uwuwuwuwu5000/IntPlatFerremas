@@ -14,6 +14,9 @@ from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render
+import bcchapi
+from datetime import datetime,timedelta
+
 
 # Create your views here.
 
@@ -39,6 +42,28 @@ class UserCreateView(CreateView):
     model = User
     form_class = CustomUserProfileForm
     template_name = 'registration/perfil.html'
+
+#Banco central
+def obtener_valor_dolar():
+    user = "es.ibarra@duocuc.cl"
+    password = "Uwu7832!"
+    siete = bcchapi.Siete(user, password)
+    today = datetime.now() - timedelta(days=1)
+    today = today.strftime("%Y-%m-%d")
+    cuadro = siete.cuadro(
+        series=["F073.TCO.PRE.Z.D"],
+        nombres = ["dolar"],
+        desde = today,
+        hasta = today,
+        observado = {"dolar":"last"}
+    )
+
+    if not cuadro.empty:
+        valor_dolar = cuadro.iloc[0]["dolar"]
+    else:
+        valor_dolar = "No disponible"
+
+    return valor_dolar
 
 def perfil(request):
     return render(request, 'registration/perfil.html')
@@ -143,10 +168,15 @@ def eliminar(request, id):
     messages.success(request, "Eliminado correctamente")
     return redirect(to="lista")
 
+#Tienda y funcion banco Central
 @login_required
 def tienda(request):
     productos = Producto.objects.all()
-    return render(request, 'tienda.html', {'productos': productos})
+    valor_dolar = obtener_valor_dolar()
+    return render(request, 'tienda.html', {
+        'productos': productos,
+        "valor_dolar":valor_dolar
+        })
     
 #Carrito
 def agregar_producto(request, id):
@@ -288,3 +318,4 @@ def generarPedido(request):
     carrito = Carrito(request)
     carrito.limpiar()
     return render(request, 'detallecarrito.html',datos)
+
