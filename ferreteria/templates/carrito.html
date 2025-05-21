@@ -13,7 +13,7 @@
                 {% for key, value in request.session.carrito.items %} 
                     <tr>
                         <td style="font-size:13px">{{ value.nombre }}</td>
-                        <td style="font-size:13px">{{ value.precio }}</td>
+                        <td style="font-size:13px" class="precio-producto" data-precio="{{ value.precio }}">{{ value.precio }}</td>
                         <td style="font-size:13px">{{ value.cantidad}}
                             <br>
                             <a href="{% url 'add' value.producto_id %}" class="badge btn btn-primary">+</a>
@@ -22,12 +22,12 @@
                     </tr>
                     <tr>
                         <th scope="row">Subtotal : </th>
-                        <td colspan="2">$ {{value.total }}</td>
+                        <td colspan="2" class="subtotal" data-subtotal="{{ value.total }}">$ {{value.total }}</td>
                         
                     </tr>
                 {% endfor %}
                     <tr>
-                        <th scope="row">Total: {{ totalCarrito|intcomma }}  </th>
+                        <th scope="row">Total: <span id="total-carrito" data-total="{{ totalCarrito }}">{{ totalCarrito|intcomma }}</span></th>
                     </tr>
                 
                 {% if messages %}
@@ -78,3 +78,48 @@
         <!-- <a href="{% url 'generarPedido' %}" class="btn btn-outline-primary">Comprar</a> -->
     </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const valorDolar = parseFloat(localStorage.getItem("valor_dolar")) || 1;
+    const monedaGuardada = localStorage.getItem("moneda_seleccionada") || "clp";
+
+    function formatearMoneda(valor, moneda) {
+        if (moneda === "clp") {
+            return "$" + valor.toLocaleString("es-CL");
+        } else {
+            return "US$ " + valor.toFixed(2);
+        }
+    }
+
+    function actualizarPrecios(moneda) {
+        document.querySelectorAll(".precio-producto").forEach(el => {
+            const precioCLP = parseFloat(el.dataset.precio);
+            const precioUSD = precioCLP / valorDolar;
+            el.textContent = formatearMoneda(moneda === "usd" ? precioUSD : precioCLP, moneda);
+        });
+
+        document.querySelectorAll(".subtotal").forEach(el => {
+            const subtotalCLP = parseFloat(el.dataset.subtotal);
+            const subtotalUSD = subtotalCLP / valorDolar;
+            el.textContent = formatearMoneda(moneda === "usd" ? subtotalUSD : subtotalCLP, moneda);
+        });
+
+        const totalEl = document.getElementById("total-carrito");
+        if (totalEl) {
+            const totalCLP = parseFloat(totalEl.dataset.total);
+            const totalUSD = totalCLP / valorDolar;
+            totalEl.textContent = formatearMoneda(moneda === "usd" ? totalUSD : totalCLP, moneda);
+        }
+    }
+
+    document.querySelectorAll("input[name='moneda']").forEach(radio => {
+        radio.addEventListener("change", function () {
+            localStorage.setItem("moneda_seleccionada", this.value);
+            actualizarPrecios(this.value);
+        });
+    });
+
+    actualizarPrecios(monedaGuardada);
+});
+</script>
