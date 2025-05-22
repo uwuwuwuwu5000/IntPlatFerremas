@@ -6,6 +6,7 @@ pip install setuptools
 pip install distutils
 pip install bcchapi
 pip install transbank-sdk
+pip install djangorestframework
 ////
 SUPERUSER ->
 Admin: Admin //
