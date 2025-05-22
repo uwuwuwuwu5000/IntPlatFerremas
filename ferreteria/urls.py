@@ -20,6 +20,7 @@ urlpatterns=[
     path('restar/<id>', views.restar_producto, name="sub"),
     path('limpiar/', views.limpiar_carrito, name="cls"),
     path('generarBoleta/', views.generarBoleta,name="generarBoleta"),
+    path('generarPedido/', views.generarPedido,name="generarPedido"),
 
     path('nosotros/', views.nosotros, name="nosotros"),
     path('productos/', views.productos, name="productos"),
@@ -29,4 +30,6 @@ urlpatterns=[
     path('lista/', views.lista, name="lista"),
     path('eliminar/<id>/', views.eliminar, name="eliminar"),  
     path('api/', include(router.urls)),
+    path('webpay/iniciar/', views.generarPedido, name='webpay_iniciar'),
+    path('webpay/respuesta/', views.webpay_respuesta, name='webpay_respuesta'),
 ]

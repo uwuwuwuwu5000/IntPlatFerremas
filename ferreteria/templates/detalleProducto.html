@@ -13,7 +13,7 @@
             
             <div class="card border-success ">
                 <div class="card">
-                    <h2 style="text-align: center; color: darkgreen;">Detalle producto</h2>
+                    
 
                     <img src="{{ producto.imagen.url }}" class="card-img-top" style="width: auto; height: auto; margin-left: 20px; margin-right: 20px;">
                     <div class="card-body text-success">
@@ -24,11 +24,11 @@
                         
                         <div class="card-footer">
                             <small class="text-muted">Categoria: {{ producto.categoria }}</small>
-                            <a href="{% url 'productos' %}" class="btn btn-outline-success" style="float: right;"> Ir a Productos </a>
+                            <a href="{% url 'productos' %}" class="btn btn-outline-success" style="float: right;margin-left:10px"> Ir a Productos </a>
                             &nbsp;
                             <a href="{% url 'tienda' %}" class="btn btn-success" style="float: right;"> Ir a Comprar </a>
                             {% if user.is_authenticated and user.is_superuser %}
-                            <a href="{% url 'modificar' producto.idProducto %}" class="btn btn-outline-danger" style="float: right;" >Modificar</a>
+                            <a href="{% url 'modificar' producto.idProducto %}" class="btn btn-outline-danger" style="float: start;" >Modificar</a>
                             {% endif %}
 
                         

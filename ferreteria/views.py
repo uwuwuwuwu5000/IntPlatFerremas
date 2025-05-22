@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout, authenticate, login
-from .models import Boleta, Producto, Categoria, detalle_boleta
+from .models import Boleta, Producto, Categoria, detalle_boleta, Pedido, DetallePedido
 from ferreteria.carrito import Carrito
 from .forms import ContactoForm, CustomUserProfileForm, ProductoForm, CustomUserCreationForm
 from django.contrib import messages
@@ -14,6 +14,9 @@ from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import render
+import bcchapi
+from datetime import datetime,timedelta
+
 
 # Create your views here.
 
@@ -39,6 +42,28 @@ class UserCreateView(CreateView):
     model = User
     form_class = CustomUserProfileForm
     template_name = 'registration/perfil.html'
+
+#Banco central
+def obtener_valor_dolar():
+    user = "es.ibarra@duocuc.cl"
+    password = "Uwu7832!"
+    siete = bcchapi.Siete(user, password)
+    today = datetime.now()
+    today = today.strftime("%Y-%m-%d")
+    cuadro = siete.cuadro(
+        series=["F073.TCO.PRE.Z.D"],
+        nombres = ["dolar"],
+        desde = today,
+        hasta = today,
+        observado = {"dolar":"last"}
+    )
+
+    if not cuadro.empty:
+        valor_dolar = cuadro.iloc[0]["dolar"]
+    else:
+        valor_dolar = "No disponible"
+
+    return valor_dolar
 
 def perfil(request):
     return render(request, 'registration/perfil.html')
@@ -143,16 +168,25 @@ def eliminar(request, id):
     messages.success(request, "Eliminado correctamente")
     return redirect(to="lista")
 
+#Tienda y funcion banco Central
 @login_required
 def tienda(request):
     productos = Producto.objects.all()
-    return render(request, 'tienda.html', {'productos': productos})
+    valor_dolar = obtener_valor_dolar()
+    return render(request, 'tienda.html', {
+        'productos': productos,
+        "valor_dolar":valor_dolar
+        })
     
-
+#Carrito
 def agregar_producto(request, id):
     carrito = Carrito(request)
     producto = Producto.objects.get(idProducto=id)
-    carrito.agregar(producto)
+    if producto.stock > 0:
+        carrito.agregar(producto)
+        messages.success(request, "Producto añadido al carrito.")
+    else:
+        messages.error(request, "No hay suficiente stock.")
     return redirect('tienda')
 
 def eliminar_producto(request, id):
@@ -172,19 +206,33 @@ def limpiar_carrito(request):
     carrito.limpiar() 
     return redirect('tienda')
 
+#boleta
 def generarBoleta(request):
     precio_total=0
+    productos = []
+
+    #Calculo de precio
     for key, value in request.session['carrito'].items():
         precio_total = precio_total + int(value['precio']) * int(value['cantidad'])
     boleta = Boleta(total = precio_total)
     boleta.save()
-    productos = []
+
+    #Validar stock 
+    for key, value in request.session['carrito'].items():
+        producto = Producto.objects.get(idProducto=value['producto_id'])
+        if producto.stock < value['cantidad']:
+            messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
+            return redirect('tienda')
+
+    #Detalle boleta
     for key, value in request.session['carrito'].items():
             producto = Producto.objects.get(idProducto = value['producto_id'])
             cant = value['cantidad']
             subtotal = cant * int(value['precio'])
             detalle = detalle_boleta(id_boleta = boleta, id_producto = producto, cantidad = cant, subtotal = subtotal)
             detalle.save()
+            producto.stock -= cant
+            producto.save()
             productos.append(detalle)
     datos={
         'productos':productos,
@@ -196,6 +244,7 @@ def generarBoleta(request):
     carrito.limpiar()
     return render(request, 'detallecarrito.html',datos)
 
+#Correo
 def enviar_correo(request):
     if request.method == 'POST':
         send_mail(
@@ -207,3 +256,100 @@ def enviar_correo(request):
         )
         return HttpResponseRedirect(reverse('correo_enviado')) 
     return render(request, 'enviar.html')
+
+#Pedido
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from transbank.webpay.webpay_plus.transaction import Transaction
+import logging
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.options import WebpayOptions
+from transbank.common.integration_type import IntegrationType
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from random import randint
+
+transaction = Transaction(
+    WebpayOptions(
+        commerce_code='597055555532',
+        api_key='579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',
+        integration_type=IntegrationType.TEST
+    )
+)
+
+def generarPedido(request):
+    precio_total=0
+    productos = []
+    carrito = request.session.get('carrito', {})
+
+    #Validar carrito vacio
+    if not carrito:
+        messages.error(request, "No puedes realizar una compra con el carrito vacío.")
+        return redirect('tienda') 
+
+    tipo_envio = request.POST.get('tipo_envio')
+    medio_pago = request.POST.get('medio_pago')
+
+    #Calculo de precio
+    for key, value in request.session['carrito'].items():
+        precio_total += int(value['precio']) * int(value['cantidad'])
+
+    if tipo_envio == 'domicilio':
+        precio_total += 5000
+
+    #Crear un pedido
+    pedido_obj = Pedido.objects.create(
+        user = request.user,
+        estado = 'creado',
+        tipo_envio=tipo_envio,
+        tipo_pago=medio_pago,
+        total = precio_total
+    )
+
+    #Validar stock 
+    for key, value in request.session['carrito'].items():
+        producto = Producto.objects.get(idProducto=value['producto_id'])
+        if producto.stock < value['cantidad']:
+            messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
+            return redirect('tienda')
+
+    #Detalle pedido
+    for key, value in request.session['carrito'].items():
+            producto = Producto.objects.get(idProducto = value['producto_id'])
+            cant = value['cantidad']
+            subtotal = cant * int(value['precio'])
+            detalle = DetallePedido.objects.create(
+                 id_pedido=pedido_obj,
+                 id_producto = producto,
+                 cantidad=cant,
+                 subtotal=subtotal
+            )
+            producto.stock -= cant
+            producto.save()
+            productos.append(detalle)
+    datos={
+        'productos':productos,
+        'fecha':pedido_obj.fecha_compra,
+        'tipo_envio':pedido_obj.tipo_envio,
+        'total': pedido_obj.total
+    }
+
+    request.session['id_pedido'] = pedido_obj.id_pedido
+    carrito = Carrito(request)
+    carrito.limpiar()
+    response = transaction.create(
+                buy_order=str(pedido_obj.id_pedido),
+                session_id=str(randint(100000, 999999)),
+                amount=str(pedido_obj.total),
+                return_url='http://localhost:8000/webpay/respuesta/'
+            )
+    return render(request, 'webpay_redirigir.html', {
+            'url': response['url'],
+            'token': response['token']
+        })
+
+def webpay_respuesta(request):
+    token = request.POST.get('token_ws') or request.GET.get('token_ws')
+    result = transaction.commit(token)
+    return render(request, 'webpay_respuesta.html', {'resultado': result})

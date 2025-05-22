@@ -12,7 +12,7 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Código Boleta</th>
+                    <th>Código Pedido</th>
                     <th>Código Producto</th>
                     <th>Cantidad</th>
                     <th>Subtotal</th>
@@ -21,7 +21,7 @@
             <tbody>
                 {% for prod in productos%}
                 <tr>
-                    <td>{{ prod.id_boleta }}</td>
+                    <td>{{ prod.id_pedido }}</td>
                     <td>{{ prod.id_producto }}</td>
                     <td>{{ prod.cantidad }}</td>
                     <td>{{ prod.subtotal }}</td>
