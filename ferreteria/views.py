@@ -48,7 +48,7 @@ def obtener_valor_dolar():
     user = "es.ibarra@duocuc.cl"
     password = "Uwu7832!"
     siete = bcchapi.Siete(user, password)
-    today = datetime.now() - timedelta(days=1)
+    today = datetime.now()
     today = today.strftime("%Y-%m-%d")
     cuadro = siete.cuadro(
         series=["F073.TCO.PRE.Z.D"],
@@ -258,6 +258,26 @@ def enviar_correo(request):
     return render(request, 'enviar.html')
 
 #Pedido
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from transbank.webpay.webpay_plus.transaction import Transaction
+import logging
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.options import WebpayOptions
+from transbank.common.integration_type import IntegrationType
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from random import randint
+
+transaction = Transaction(
+    WebpayOptions(
+        commerce_code='597055555532',
+        api_key='579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',
+        integration_type=IntegrationType.TEST
+    )
+)
+
 def generarPedido(request):
     precio_total=0
     productos = []
@@ -314,8 +334,22 @@ def generarPedido(request):
         'tipo_envio':pedido_obj.tipo_envio,
         'total': pedido_obj.total
     }
+
     request.session['id_pedido'] = pedido_obj.id_pedido
     carrito = Carrito(request)
     carrito.limpiar()
-    return render(request, 'detallecarrito.html',datos)
+    response = transaction.create(
+                buy_order=str(pedido_obj.id_pedido),
+                session_id=str(randint(100000, 999999)),
+                amount=str(pedido_obj.total),
+                return_url='http://localhost:8000/webpay/respuesta/'
+            )
+    return render(request, 'webpay_redirigir.html', {
+            'url': response['url'],
+            'token': response['token']
+        })
 
+def webpay_respuesta(request):
+    token = request.POST.get('token_ws') or request.GET.get('token_ws')
+    result = transaction.commit(token)
+    return render(request, 'webpay_respuesta.html', {'resultado': result})
