@@ -42,11 +42,6 @@
                     <li><a href="{% url 'perfil' %}">Perfil: {{ user.email }}</a></li>   
                 {% endif %}
 
-                <form method="post">
-                    {% csrf_token %}
-                    <button type="submit">Enviar correo</button>
-                </form>
-
             </ul>
             
             <div class="toggle-btn">

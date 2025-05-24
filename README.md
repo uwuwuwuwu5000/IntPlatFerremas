@@ -4,6 +4,9 @@ pip install django-crispy-forms
 pip install crispy-bootstrap4
 pip install setuptools
 pip install distutils
+pip install bcchapi
+pip install transbank-sdk
+pip install djangorestframework
 ////
 SUPERUSER ->
 Admin: Admin //

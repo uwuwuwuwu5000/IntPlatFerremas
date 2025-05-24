@@ -30,4 +30,6 @@ urlpatterns=[
     path('lista/', views.lista, name="lista"),
     path('eliminar/<id>/', views.eliminar, name="eliminar"),  
     path('api/', include(router.urls)),
+    path('webpay/iniciar/', views.generarPedido, name='webpay_iniciar'),
+    path('webpay/respuesta/', views.webpay_respuesta, name='webpay_respuesta'),
 ]
