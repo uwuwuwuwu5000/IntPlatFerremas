@@ -11,3 +11,9 @@ pip install transbank-sdk
 SUPERUSER ->
 Admin: Admin //
 Pass: 123412134
+////
+TBK
+Authorized:
+4051 8856 0044 6623
+Rut:
+11111111-1
