@@ -33,6 +33,12 @@ urlpatterns=[
     path('bodegaPedido/<id>', views.detalle_pedidos, name="bodegaPedido"),
     path('despachar/<id>',views.despachar, name="despachar"),
 
+    #Administrador
+    path('administrador/', views.admin_view, name="administrador"),
+    path('detallepedido/<id>', views.detalle_pedidosAdmin, name="detallepedido"),
+    path('exportar-informe/', views.exportar_reporte_mensual, name='exportar_informe'),
+
+
     path('eliminar/<id>/', views.eliminar, name="eliminar"),  
     path('api/', include(router.urls)),
     path('webpay/iniciar/', views.generarPedido, name='webpay_iniciar'),
