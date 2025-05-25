@@ -7,6 +7,7 @@ pip install distutils
 pip install bcchapi
 pip install djangorestframework
 pip install transbank-sdk
+pip install pandas python-docx
 ////
 SUPERUSER ->
 Admin: Admin //
