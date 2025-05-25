@@ -28,6 +28,11 @@ urlpatterns=[
     path('agregar/', views.agregar, name="agregar"),
     path('modificar/<id>/', views.modificar, name="modificar"),
     path('lista/', views.lista, name="lista"),
+    # Bodega
+    path('bodega/', views.orden_pedidos, name="bodega"),
+    path('bodegaPedido/<id>', views.detalle_pedidos, name="bodegaPedido"),
+    path('despachar/<id>',views.despachar, name="despachar"),
+
     path('eliminar/<id>/', views.eliminar, name="eliminar"),  
     path('api/', include(router.urls)),
     path('webpay/iniciar/', views.generarPedido, name='webpay_iniciar'),
