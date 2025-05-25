@@ -353,3 +353,24 @@ def webpay_respuesta(request):
     token = request.POST.get('token_ws') or request.GET.get('token_ws')
     result = transaction.commit(token)
     return render(request, 'webpay_respuesta.html', {'resultado': result})
+
+@permission_required ('ferreteria.view_producto')
+def orden_pedidos(request):
+    pedidos = Pedido.objects.all()
+    data = {}
+    
+    data = {'pedido':pedidos}
+    return render(request, 'bodega.html', data)
+
+@permission_required ('ferreteria.view_producto')
+def detalle_pedidos(request,id):
+    detalles = DetallePedido.objects.filter(id_pedido=id)
+    return render (request, 'bodegaPedido.html', {'detalles':detalles})
+
+def despachar(request, id):
+    if request.method == "POST":
+        pedido = get_object_or_404(Pedido,id_pedido = id)
+        pedido.estado = "despachado"
+        pedido.save()
+
+    return redirect('bodega')
