@@ -33,6 +33,7 @@
                     <li><a href="{% url 'lista' %}" >Lista productos</a></li>
                     <li><a href="{% url 'perfil' %}">Bienvenid@ {{ user.username }} Perfil Admin: {{ user.email }}</a></li>
                     <li><a href="{% url 'bodega' %}">Bodega </a></li>
+                    <li><a href="{% url 'administrador' %}">administrador </a></li>
                     <li><a href="{% url 'cerrar' %}">Cerrar sesión </a></li>
                 {% elif user.is_authenticated and not user.is_superuser %}
                     <li><a href="#">Bienvenid@ {{ user.username }} </a></li>
@@ -40,6 +41,7 @@
                     <li><a href="{% url 'nosotros' %}"  >Sobre nosotros</a></li>
                     <li><a href="{% url 'tienda' %}"  >Productos</a></li>
                     <li><a href="{% url 'bodega' %}">Bodega </a></li>
+                    <li><a href="{% url 'administrador' %}">administrador </a></li>
                     <li><a href="{% url 'cerrar' %}">Cerrar sesión</a></li>
                     <li><a href="{% url 'perfil' %}">Perfil: {{ user.email }}</a></li>   
                 {% endif %}
