@@ -23,7 +23,7 @@ urlpatterns=[
     path('generarPedido/', views.generarPedido,name="generarPedido"),
 
     path('nosotros/', views.nosotros, name="nosotros"),
-    path('productos/', views.productos, name="productos"),
+  
     path('detalle/<id>/', views.detalle_producto, name="detalle"),
     path('agregar/', views.agregar, name="agregar"),
     path('modificar/<id>/', views.modificar, name="modificar"),

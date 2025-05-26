@@ -24,7 +24,7 @@
                         
                         <div class="card-footer">
                             <small class="text-muted">Categoria: {{ producto.categoria }}</small>
-                            <a href="{% url 'productos' %}" class="btn btn-outline-success" style="float: right;margin-left:10px"> Ir a Productos </a>
+                            <a href="{% url 'tienda' %}" class="btn btn-outline-success" style="float: right;margin-left:10px"> Ir a Productos </a>
                             &nbsp;
                             <a href="{% url 'tienda' %}" class="btn btn-success" style="float: right;"> Ir a Comprar </a>
                             {% if user.is_authenticated and user.is_superuser %}

@@ -76,13 +76,6 @@ def perfil(request):
 def index(request):
     return render(request, 'index.html')
 
-def productos(request):
-    producto = Producto.objects.all() 
-    data = {
-        'productos': producto
-    }
-    return render(request, 'productos.html', data)
-
 def nosotros(request):
     data = {
         'form': ContactoForm()
@@ -247,7 +240,7 @@ def generarBoleta(request):
     request.session['boleta'] = boleta.id_boleta
     carrito = Carrito(request)
     carrito.limpiar()
-    return render(request, 'detallecarrito.html',datos)
+    return render(request, 'detallepedido.html',datos)
 
 #Correo
 def enviar_correo(request):
@@ -283,81 +276,285 @@ transaction = Transaction(
     )
 )
 
-def generarPedido(request):
-    precio_total=0
-    productos = []
-    carrito = request.session.get('carrito', {})
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.options import WebpayOptions
+from transbank.common.integration_type import IntegrationType
+import random
 
-    #Validar carrito vacio
+# Configuración global de Webpay (debería ir al inicio del archivo)
+webpay_transaction = Transaction(
+    WebpayOptions(
+        commerce_code='597055555532', 
+        api_key='579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',
+        integration_type=IntegrationType.TEST
+    )
+)
+
+def generarPedido(request):
+    # Validar carrito vacío primero
+    carrito = request.session.get('carrito', {})
     if not carrito:
         messages.error(request, "No puedes realizar una compra con el carrito vacío.")
-        return redirect('tienda') 
+        return redirect('tienda')
 
-    tipo_envio = request.POST.get('tipo_envio')
-    medio_pago = request.POST.get('medio_pago')
+    if request.method == 'POST':
+        tipo_envio = request.POST.get('tipo_envio')
+        medio_pago = request.POST.get('medio_pago')
 
-    #Calculo de precio
-    for key, value in request.session['carrito'].items():
-        precio_total += int(value['precio']) * int(value['cantidad'])
+        # Calcular precio total
+        precio_total = sum(int(item['precio']) * int(item['cantidad']) for item in carrito.values())
+        
+        if tipo_envio == 'domicilio':
+            precio_total += 5000
 
-    if tipo_envio == 'domicilio':
-        precio_total += 5000
+        # Validar stock
+        for key, value in carrito.items():
+            producto = Producto.objects.get(idProducto=value['producto_id'])
+            if producto.stock < value['cantidad']:
+                messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
+                return redirect('tienda')
 
-    #Crear un pedido
-    pedido_obj = Pedido.objects.create(
-        user = request.user,
-        estado = 'creado',
-        tipo_envio=tipo_envio,
-        tipo_pago=medio_pago,
-        total = precio_total
+        # Crear pedido (en estado pendiente para Webpay)
+        pedido_obj = Pedido.objects.create(
+            user=request.user,
+            estado='pendiente',
+            tipo_envio=tipo_envio,
+            tipo_pago=medio_pago,
+            total=precio_total
+        )
+
+        # Si el medio de pago es Webpay
+        if medio_pago == 'webpay':
+            try:
+                buy_order = str(pedido_obj.id_pedido)
+                session_id = str(random.randint(100000, 999999))
+                return_url = f'http://{request.get_host()}/webpay/respuesta/'
+                
+                response = webpay_transaction.create(
+                    buy_order=buy_order,
+                    session_id=session_id,
+                    amount=precio_total,
+                    return_url=return_url
+                )
+                
+                # Guardar datos importantes en sesión
+                request.session['webpay_token'] = response['token']
+                request.session['webpay_order'] = buy_order
+                request.session['id_pedido'] = pedido_obj.id_pedido
+                
+                # Redirigir a Webpay
+                return render(request, 'webpay_redirigir.html', {
+                    'url': response['url'],
+                    'token': response['token']
+                })
+            except Exception as e:
+                messages.error(request, f"Error al conectar con Webpay: {str(e)}")
+                return redirect('carrito')
+        
+        # Para otros métodos de pago
+        else:
+            return procesar_pedido_completo(request, pedido_obj, carrito)
+
+    return redirect('carrito')
+
+from django.core.mail import EmailMessage
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from django.template.loader import render_to_string
+
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+
+def generar_pdf_pedido(pedido, detalles):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Obtener estilos base y modificar solo lo necesario
+    styles = getSampleStyleSheet()
+    
+    # Crear estilos personalizados solo si no existen
+    if 'CustomTitle' not in styles:
+        styles.add(ParagraphStyle(
+            name='CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            alignment=TA_CENTER,
+            spaceAfter=20
+        ))
+    
+    if 'CustomSubtitle' not in styles:
+        styles.add(ParagraphStyle(
+            name='CustomSubtitle',
+            parent=styles['Heading2'],
+            fontSize=12,
+            alignment=TA_CENTER,
+            spaceAfter=10
+        ))
+    
+    elements = []
+    
+    # Título usando el estilo personalizado
+    elements.append(Paragraph("FERRETERIA FERREMAS", styles['CustomTitle']))
+    elements.append(Paragraph("COMPROBANTE DE PEDIDO", styles['CustomSubtitle']))
+    elements.append(Spacer(1, 20))
+    
+    # Resto del código permanece igual...
+    pedido_info = [
+        ["N° Pedido:", str(pedido.id_pedido)],
+        ["Fecha:", pedido.fecha_compra.strftime("%d/%m/%Y %H:%M")],
+        ["Cliente:", pedido.user.username],
+        ["Estado:", pedido.estado.capitalize()],
+        ["Tipo de envío:", pedido.tipo_envio.capitalize()],
+        ["Total:", f"${pedido.total:,}"],
+    ]
+    
+    pedido_table = Table(pedido_info, colWidths=[100, 200])
+    pedido_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(pedido_table)
+    elements.append(Spacer(1, 30))
+    
+    # Detalles del pedido
+    elements.append(Paragraph("Detalles del Pedido", styles['Heading2']))
+    
+    detalle_data = [["Producto", "Cantidad", "Precio Unitario", "Subtotal"]]
+    for detalle in detalles:
+        detalle_data.append([
+            detalle.id_producto.nombre,
+            str(detalle.cantidad),
+            f"${int(detalle.subtotal/detalle.cantidad):,}",
+            f"${detalle.subtotal:,}"
+        ])
+    
+    detalle_table = Table(detalle_data, colWidths=[200, 80, 100, 100])
+    detalle_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    elements.append(detalle_table)
+    
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    return pdf
+
+def enviar_pedido_por_correo(pedido, detalles, destinatario):
+    # Generar PDF
+    pdf = generar_pdf_pedido(pedido, detalles)
+    
+    # Crear mensaje de correo
+    subject = f'Confirmación de Pedido #{pedido.id_pedido} - Ferreteria Ferremas'
+    body = render_to_string('email_pedido.html', {
+        'pedido': pedido,
+        'detalles': detalles,
+    })
+    
+    email = EmailMessage(
+        subject,
+        body,
+        'pruebaskk1221@gmail.com',  # Remitente
+        ['kkroto1221@gmail.com'],             # Destinatario
     )
+    email.content_subtype = "html"  # Para contenido HTML
+    
+    # Adjuntar PDF
+    email.attach(
+        f'pedido_{pedido.id_pedido}.pdf',
+        pdf,
+        'application/pdf'
+    )
+    
+    email.send()
 
-    #Validar stock 
-    for key, value in request.session['carrito'].items():
+def procesar_pedido_completo(request, pedido_obj, carrito):
+    # Crear detalles del pedido
+    productos = []
+    for key, value in carrito.items():
         producto = Producto.objects.get(idProducto=value['producto_id'])
-        if producto.stock < value['cantidad']:
-            messages.error(request, f"No hay suficiente stock para {producto.nombre}.")
-            return redirect('tienda')
-
-    #Detalle pedido
-    for key, value in request.session['carrito'].items():
-            producto = Producto.objects.get(idProducto = value['producto_id'])
-            cant = value['cantidad']
-            subtotal = cant * int(value['precio'])
-            detalle = DetallePedido.objects.create(
-                 id_pedido=pedido_obj,
-                 id_producto = producto,
-                 cantidad=cant,
-                 subtotal=subtotal
-            )
-            producto.stock -= cant
-            producto.save()
-            productos.append(detalle)
-    datos={
-        'productos':productos,
-        'fecha':pedido_obj.fecha_compra,
-        'tipo_envio':pedido_obj.tipo_envio,
-        'total': pedido_obj.total
-    }
-
-    request.session['id_pedido'] = pedido_obj.id_pedido
+        cant = value['cantidad']
+        subtotal = cant * int(value['precio'])
+        
+        DetallePedido.objects.create(
+            id_pedido=pedido_obj,
+            id_producto=producto,
+            cantidad=cant,
+            subtotal=subtotal
+        )
+        
+        producto.stock -= cant
+        producto.save()
+        productos.append(producto)
+    
+    # Actualizar estado del pedido
+    pedido_obj.estado = 'completado'
+    pedido_obj.save()
+    
+    # Obtener detalles para el PDF y correo
+    detalles = DetallePedido.objects.filter(id_pedido=pedido_obj)
+    
+    # Enviar correo con PDF adjunto
+    try:
+        enviar_pedido_por_correo(pedido_obj, detalles, request.user.email)
+        messages.success(request, "Se ha enviado un correo con los detalles de tu pedido.")
+    except Exception as e:
+        messages.warning(request, f"Pedido completado, pero hubo un error al enviar el correo: {str(e)}")
+    
+    # Limpiar carrito
     carrito = Carrito(request)
     carrito.limpiar()
-    response = transaction.create(
-                buy_order=str(pedido_obj.id_pedido),
-                session_id=str(randint(100000, 999999)),
-                amount=str(pedido_obj.total),
-                return_url='http://localhost:8000/webpay/respuesta/'
-            )
-    return render(request, 'webpay_redirigir.html', {
-            'url': response['url'],
-            'token': response['token']
-        })
+    
+    # Mostrar confirmación
+    return render(request, 'detallepedido.html', {
+        'detalles': detalles,
+        'fecha': pedido_obj.fecha_compra,
+        'total': pedido_obj.total,
+        'tipo_envio': pedido_obj.tipo_envio
+    })
 
 def webpay_respuesta(request):
     token = request.POST.get('token_ws') or request.GET.get('token_ws')
-    result = transaction.commit(token)
-    return render(request, 'webpay_respuesta.html', {'resultado': result})
+    
+    if not token:
+        messages.error(request, "Token de Webpay no recibido")
+        return redirect('carrito')
+    
+    try:
+        # Confirmar transacción con Webpay
+        response = webpay_transaction.commit(token)
+        
+        if response.get('status') == 'AUTHORIZED':
+            # Pago exitoso
+            pedido_id = request.session.get('id_pedido')
+            pedido = Pedido.objects.get(id_pedido=pedido_id)
+            
+            # Verificar que el pedido no haya sido procesado antes
+            if pedido.estado == 'pendiente':
+                carrito = request.session.get('carrito', {})
+                return procesar_pedido_completo(request, pedido, carrito)
+            else:
+                messages.success(request, "Pedido ya fue procesado anteriormente")
+                return redirect('detallepedido')
+        else:
+            # Pago fallido
+            messages.error(request, "El pago no pudo ser procesado. Por favor intenta nuevamente.")
+            return redirect('productos')
+            
+    except Exception as e:
+        messages.error(request, f"Error al procesar el pago: {str(e)}")
+        return redirect('tienda')
 
 @permission_required ('ferreteria.view_producto')
 def orden_pedidos(request):
