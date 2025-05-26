@@ -46,52 +46,5 @@
         </div>
     </div>
 
-
-<script>
-    // Verificar si las variables están disponibles
-    console.log("Valor dólar:", "{{ valor_dolar }}");
-
-
-    // Guardar en localStorage
-    localStorage.setItem("valor_dolar", "{{ valor_dolar }}");
-    
-    document.addEventListener("DOMContentLoaded", function () {
-        const valorDolar = parseFloat(localStorage.getItem("valor_dolar")) || 1;
-        const seleccionado = document.querySelector('input[name="moneda"]:checked').value;
-        localStorage.setItem("moneda_seleccionada", seleccionado);
-        document.querySelectorAll('input[name="moneda"]').forEach(radio => {
-        radio.addEventListener("change", function () {
-            localStorage.setItem("moneda_seleccionada", this.value);
-            console.log("Moneda cambiada a:", this.value);
-            });
-        });
-        
-        function formatearMoneda(valor, moneda) {
-            if (moneda === "clp") {
-                return "$" + valor.toLocaleString("es-CL");
-            } else {
-                return "US$ " + valor.toFixed(2);
-            }
-        }
-
-        function actualizarPrecios(moneda) {
-            document.querySelectorAll(".precio-producto").forEach(el => {
-                const precioCLP = parseFloat(el.dataset.precio);
-                const precioUSD = precioCLP / valorDolar;
-                el.textContent = formatearMoneda(moneda === "usd" ? precioUSD : precioCLP, moneda);
-            });
-        }
-
-        document.querySelectorAll("input[name='moneda']").forEach(radio => {
-            radio.addEventListener("change", function () {
-                actualizarPrecios(this.value);
-            });
-        });
-
-        // Mostrar en CLP por defecto
-        actualizarPrecios("clp");
-    });
-
-</script>    
 {% endblock %}
 
