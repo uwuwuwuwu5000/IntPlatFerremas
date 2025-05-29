@@ -1,5 +1,6 @@
 from django.urls import path, include
 from . import views
+from . import views_kk
 from .views import ProductoViewset, CategoriaViewset
 from rest_framework import routers
 
@@ -14,13 +15,13 @@ urlpatterns=[
     path('logout/', views.cerrar, name="cerrar"),
     path('registrar/', views.registrar, name="registrar"),
 
-    path('tienda/', views.tienda, name="tienda"),
-    path('agregar/<id>', views.agregar_producto, name="add"),
-    path('eliminar/<id>', views.eliminar_producto, name="del"),
-    path('restar/<id>', views.restar_producto, name="sub"),
-    path('limpiar/', views.limpiar_carrito, name="cls"),
-    path('generarBoleta/', views.generarBoleta,name="generarBoleta"),
-    path('generarPedido/', views.generarPedido,name="generarPedido"),
+    path('tienda/', views_kk.tienda, name="tienda"),
+    path('agregar/<id>', views_kk.agregar_producto, name="add"),
+    path('eliminar/<id>', views_kk.eliminar_producto, name="del"),
+    path('restar/<id>', views_kk.restar_producto, name="sub"),
+    path('limpiar/', views_kk.limpiar_carrito, name="cls"),
+    path('generarBoleta/', views_kk.generarBoleta,name="generarBoleta"),
+    path('generarPedido/', views_kk.generarPedido,name="generarPedido"),
 
     path('nosotros/', views.nosotros, name="nosotros"),
   
@@ -41,6 +42,6 @@ urlpatterns=[
 
     path('eliminar/<id>/', views.eliminar, name="eliminar"),  
     path('api/', include(router.urls)),
-    path('webpay/iniciar/', views.generarPedido, name='webpay_iniciar'),
-    path('webpay/respuesta/', views.webpay_respuesta, name='webpay_respuesta'),
+    path('webpay/iniciar/', views_kk.generarPedido, name='webpay_iniciar'),
+    path('webpay/respuesta/', views_kk.webpay_respuesta, name='webpay_respuesta'),
 ]
