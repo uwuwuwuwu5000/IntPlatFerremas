@@ -12,7 +12,8 @@
 <div class="container">
     <div class="card mb-3">
         <div class="card-body">
-            <h2 style="color: darkgreen;"></h2>
+            <h2 style="color: darkgreen;">Pedidos Pagados</h2>
+            <a href="{% url 'entregas' %}" class="btn btn-primary" style=" margin: 5px 5px; float: right;" >Entregar Producto </a>
             <table class="table table-striped table-hover table-responsive-sm">
                 <tr>
                     <th>Id Pedido</th>
@@ -21,11 +22,10 @@
                     <th>Estado</th>
                     <th>Tipo Envio</th>
                     <th>Total</th>
-                    <th>Preparar</th>
+                    <th>Solicitud</th>
                 </tr>
                 <!-- Cambiar el if de estado a pagado despues -->
                 {% for p in pedido %}
-                    {%if p.estado in "preparando"%}
                 <tr>
                     <td>{{p.id_pedido}}</td>
                     <td> {{ p.fecha_compra }}</td>
@@ -33,15 +33,8 @@
                     <td>{{p.estado}}</td>                    
                     <td>{{p.tipo_envio}}</td>                    
                     <td>${{p.total | intcomma}}</td>
-                        {%if p.estado == "despachado"%} 
-                        <td>
-                            <button class="btn btn-outline-success" disabled>Preparar</button>
-                        </td>    
-                        {%else%}
-                            <td><a href="{% url 'bodegaPedido' p.id_pedido %}" class="btn btn-outline-success">Preparar</a></td>               
-                        {%endif%}
+                    <td><a href="{% url 'vendedorDetalle' p.id_pedido %}" class="btn btn-outline-success">Ver Solicitud</a></td>               
                 </tr>
-                    {%endif%}
                 {% endfor %}
             </table>
             <div>

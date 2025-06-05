@@ -228,3 +228,52 @@ def exportar_reporte_mensual(request):
     response['Content-Disposition'] = f'attachment; filename=Informe_VentasFerremas_{mes_actual}_{año_actual}.docx'
     doc.save(response)
     return response
+
+
+def vendedor_view(request):
+    # estado= "pagado"
+    estado= "pagado"
+    pedidos = Pedido.objects.filter(estado=estado)
+    data = {}
+    
+    data = {'pedido':pedidos}
+    return render(request, 'vendedor.html', data)
+
+def detalle_pedidosVendedor(request,id):
+    detalles = DetallePedido.objects.filter(id_pedido=id)
+    return render (request, 'vendedorDetalles.html', {'detalles':detalles})
+
+def entregas_view(request):
+    #estado= "pagado"
+    estado1= "despachado"
+    estado2="entregado"
+    tipo_entrega="retiro"
+    pedidos = Pedido.objects.filter(estado__in=[estado1,estado2],tipo_envio=tipo_entrega)
+    data = {}
+    
+    data = {'pedido':pedidos}
+    return render(request, 'entregas.html', data)
+
+def entregar(request, id):
+    if request.method == "POST":
+        pedido = get_object_or_404(Pedido,id_pedido = id)
+        pedido.estado = "entregado"
+        pedido.save()
+
+    return redirect('entregas')
+
+def preparar(request, id):
+    if request.method == "POST":
+        pedido = get_object_or_404(Pedido,id_pedido = id)
+        pedido.estado = "preparando"
+        pedido.save()
+
+    return redirect('vendedor')
+
+def rechazar(request, id):
+    if request.method == "POST":
+        pedido = get_object_or_404(Pedido,id_pedido = id)
+        pedido.estado = "rechazado"
+        pedido.save()
+
+    return redirect('vendedor')

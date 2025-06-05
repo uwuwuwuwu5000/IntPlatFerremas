@@ -1,51 +1,38 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import logout, authenticate, login
-from .models import Boleta, Producto, Categoria, detalle_boleta, Pedido, DetallePedido
-from ferreteria.carrito import Carrito
-from .forms import ContactoForm, CustomUserProfileForm, ProductoForm, CustomUserCreationForm
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
-from rest_framework import viewsets
-from .serializers import ProductoSerializer
+from django.contrib.auth import logout, authenticate, login
 from django.contrib.auth.decorators import login_required, permission_required
-from django.views.generic import CreateView
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from django.shortcuts import render
+from django.template.loader import render_to_string
+
+from .models import Boleta, Producto, Categoria, detalle_boleta, Pedido, DetallePedido
+from .forms import ContactoForm, CustomUserProfileForm, ProductoForm, CustomUserCreationForm
+from .serializers import ProductoSerializer
+from ferreteria.carrito import Carrito
+
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.options import WebpayOptions
+from transbank.common.integration_type import IntegrationType
+
 import bcchapi
-from datetime import datetime,timedelta
-from docx import Document
-import pandas as pd
-import matplotlib.pyplot as plt
-import io
-from docx.shared import Inches
-from django.core.mail import EmailMessage
+from datetime import datetime
+import random
 from io import BytesIO
+
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib import colors
-from django.template.loader import render_to_string
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from transbank.webpay.webpay_plus.transaction import Transaction
-import logging
-from transbank.webpay.webpay_plus.transaction import Transaction
-from transbank.common.options import WebpayOptions
-from transbank.common.integration_type import IntegrationType
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from random import randint
-from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from transbank.webpay.webpay_plus.transaction import Transaction
-from transbank.common.options import WebpayOptions
-from transbank.common.integration_type import IntegrationType
-import random
+
 
 #Banco central
 def obtener_valor_dolar():
@@ -157,18 +144,6 @@ def enviar_correo(request):
         return HttpResponseRedirect(reverse('correo_enviado')) 
     return render(request, 'enviar.html')
 
-
-
-transaction = Transaction(
-    WebpayOptions(
-        commerce_code='597055555532',
-        api_key='579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',
-        integration_type=IntegrationType.TEST
-    )
-)
-
-
-# Configuración global de Webpay (debería ir al inicio del archivo)
 webpay_transaction = Transaction(
     WebpayOptions(
         commerce_code='597055555532', 
@@ -204,7 +179,7 @@ def generarPedido(request):
         # Crear pedido (en estado pendiente para Webpay)
         pedido_obj = Pedido.objects.create(
             user=request.user,
-            estado='pendiente',
+            estado='creado',
             tipo_envio=tipo_envio,
             tipo_pago=medio_pago,
             total=precio_total
@@ -342,7 +317,7 @@ def enviar_pedido_por_correo(pedido, detalles, destinatario):
         subject,
         body,
         'pruebaskk1221@gmail.com',  # Remitente
-        ['kkroto1221@gmail.com'],             # Destinatario
+        [destinatario],             # Destinatario
     )
     email.content_subtype = "html"  # Para contenido HTML
     
@@ -375,7 +350,7 @@ def procesar_pedido_completo(request, pedido_obj, carrito):
         productos.append(producto)
     
     # Actualizar estado del pedido
-    pedido_obj.estado = 'completado'
+    pedido_obj.estado = 'pagado'
     pedido_obj.save()
     
     # Obtener detalles para el PDF y correo
@@ -418,12 +393,12 @@ def webpay_respuesta(request):
             pedido = Pedido.objects.get(id_pedido=pedido_id)
             
             # Verificar que el pedido no haya sido procesado antes
-            if pedido.estado == 'pendiente':
+            if pedido.estado == 'creado':
                 carrito = request.session.get('carrito', {})
                 return procesar_pedido_completo(request, pedido, carrito)
             else:
                 messages.success(request, "Pedido ya fue procesado anteriormente")
-                return redirect('detallepedido')
+                return redirect('detallepedido', id=pedido.id_pedido)
         else:
             # Pago fallido
             messages.error(request, "El pago no pudo ser procesado. Por favor intenta nuevamente.")

@@ -65,6 +65,7 @@ class Pedido(models.Model):
     fecha_compra = models.DateTimeField(auto_now_add=True)
     ESTADOS_PEDIDO = [
         ('creado', 'Creado'),
+        ('pendiente', 'Pendiente'),
         ('pagado', 'Pagado'),
         ('rechazado','Pago Rechazado'),
         ('preparando', 'Preparando orden'),

@@ -20,7 +20,7 @@
                         <p class="card-text"> Apellido: {{ user.last_name }}</p>
                         <p class="card-text"> Correo: {{ user.email }}</p>
 
-                        <a href="{% url 'productos' %}" class="btn btn-outline-success" style="float: right;"> Ir a Productos </a>
+                        <a href="{% url 'tienda' %}" class="btn btn-outline-success" style="float: right;"> Ir a Productos </a>
                         {% if user.is_authenticated and user.is_superuser %}
                         <div class="card-footer">
                             <small class="text-muted">Staff: {{ user.email }}</small>
