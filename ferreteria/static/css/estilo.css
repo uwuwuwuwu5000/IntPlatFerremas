@@ -16,6 +16,31 @@ body{
     width: 100%;
 }
 /* Header section*/
+
+
+
+/* Responsive */
+@media (max-width: 768px) {
+    .links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background-color: #333;
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    .links.show {
+        display: flex;
+    }
+
+    .toggle-btn {
+        display: block;
+    }
+}
+
 header{
     width: 1140px;
     max-width: 1200px;
@@ -99,6 +124,64 @@ header .dropdown-menu a:hover{
         display: block;
         
     }
+}
+
+/*btns admin */
+
+.admin-buttons .btn-admin {
+    font-weight: 550;
+    font-size: 15px;
+    /* padding: 15px; */
+    border-radius: 3px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.btn-usuarios {
+    background-color: #28a745; /* verde */
+    color: white;
+}
+
+.btn-usuarios:hover {
+    background-color: #16752a;
+}
+
+.btn-productos {
+    background-color: #ffc107; /* amarillo */
+    color: black;
+}
+
+.btn-productos:hover {
+    background-color: #e0a800;
+    color: white;
+}
+.btn-entregas {
+    background-color: #8a24ff; /* amarillo */
+    color: black;
+}
+
+.btn-entregas:hover {
+    background-color: #4f1295;
+    color: white;
+}
+
+.btn-pedidos {
+    background-color: #007bff; /* azul */
+    color: white;
+}
+
+.btn-pedidos:hover {
+    background-color: #0056b3;
+}
+
+.btn-informe {
+    background-color: #6f42c1; /* púrpura */
+    color: white;
+}
+
+.btn-informe:hover {
+    background-color: #5936a2;
 }
 
 /*Footer section*/

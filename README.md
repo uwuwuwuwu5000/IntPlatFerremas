@@ -8,6 +8,7 @@ pip install bcchapi
 pip install djangorestframework
 pip install transbank-sdk
 pip install pandas python-docx
+pip install matplotlib
 pip install reportlab
 ////
 SUPERUSER ->

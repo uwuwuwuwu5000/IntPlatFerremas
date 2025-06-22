@@ -17,41 +17,41 @@
 </head>
 <body>
     <header>
-        <div class="navbar">
-            
+       <nav class="navbar  d-flex align-items-center">
+            <div class="logo-box">
+                 <a href="{% url 'index' %}" class="d-flex align-items-center text-decoration-none">
+                <img src="{% static 'img/logoF.avif' %}" alt="FERREMAx Logo" style="height: 40px; margin-right: 10px;">
+                <span class="logo-text" style="font-weight: bold; font-size: 1.4rem; color: #28a745;">FERREMAx</span>
+        </a>
+            </div>
+
             <ul class="links">
                 {% if not user.is_authenticated %}
-                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}" >Sobre nosotros</a></li>
-                    <li><a href="{% url 'tienda' %}"  >Productos</a></li>
-                    <li><a href="{% url 'registrar' %}" >Registrarse</a></li>
-                    <li><a href="{% url 'login' %}" >Iniciar sesión</a></li>
+                    <li><a href="{% url 'index' %}">Inicio</a></li>
+                    <li><a href="{% url 'tienda' %}">Productos</a></li>
+                    <li><a href="{% url 'registrar' %}">Registrarse</a></li>
+                    <li><a href="{% url 'login' %}">Iniciar sesión</a></li>
                 {% elif user.is_authenticated and user.is_superuser %}
-                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}" >Sobre nosotros</a></li>
-                    <li><a href="{% url 'tienda' %}"  >Productos</a></li>
-                    <li><a href="{% url 'lista' %}" >Lista productos</a></li>
-                    <li><a href="{% url 'perfil' %}">Bienvenid@ {{ user.username }} Perfil Admin: {{ user.email }}</a></li>
-                    <li><a href="{% url 'bodega' %}">Bodega </a></li>
-                    <li><a href="{% url 'administrador' %}">administrador </a></li>
-                    <li><a href="{% url 'cerrar' %}">Cerrar sesión </a></li>
-                {% elif user.is_authenticated and not user.is_superuser %}
-                    <li><a href="#">Bienvenid@ {{ user.username }} </a></li>
-                    <li><a href="{% url 'index' %}"  >Inicio</a></li>
-                    <li><a href="{% url 'nosotros' %}"  >Sobre nosotros</a></li>
-                    <li><a href="{% url 'tienda' %}"  >Productos</a></li>
-                    <li><a href="{% url 'bodega' %}">Bodega </a></li>
-                    <li><a href="{% url 'administrador' %}">administrador </a></li>
+                    <li><a href="{% url 'index' %}">Inicio</a></li>
+                    <li><a href="{% url 'tienda' %}">Productos</a></li>
+                    <li><a href="{% url 'perfil' %}">Bienvenid@ {{ user.username }}</a></li>
+                    <li><a href="{% url 'bodega' %}">Bodega</a></li>
+                    <li><a href="{% url 'administrador' %}">Administrador</a></li>
+                    <li><a href="{% url 'vendedor' %}">Vendedor</a></li>
+                    <li><a href="{% url 'contador' %}">Contador</a></li>
                     <li><a href="{% url 'cerrar' %}">Cerrar sesión</a></li>
-                    <li><a href="{% url 'perfil' %}">Perfil: {{ user.email }}</a></li>   
+                {% elif user.is_authenticated and not user.is_superuser %}
+                <li><a href="{% url 'index' %}">Inicio</a></li>
+                <li><a href="{% url 'tienda' %}">Productos</a></li>
+                <li><a href="{% url 'perfil' %}">Bienvenid@ {{ user.username }}</a></li>
+                    <li><a href="{% url 'cerrar' %}">Cerrar sesión</a></li>
                 {% endif %}
-
             </ul>
-            
+
             <div class="toggle-btn">
                 <i class="fa-solid fa-bars"></i>
             </div>
-        </div>
+        </nav>
 
         </div> 
     </header>
