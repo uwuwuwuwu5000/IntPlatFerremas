@@ -67,5 +67,6 @@ urlpatterns=[
     path('reset-password/done/', views_kk.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('reset-password-confirm/<uidb64>/<token>/', views_kk.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset-password-complete/', views_kk.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('transferencia/<int:id_pedido>/', views_kk.formulario_transferencia, name='formulario_transferencia'),
      
 ]

@@ -36,26 +36,41 @@ from reportlab.lib.enums import TA_CENTER
 
 
 #Banco central
+import requests
+from requests.auth import HTTPProxyAuth
+
 def obtener_valor_dolar():
-    user = "es.ibarra@duocuc.cl"
-    password = "Uwu7832!"
-    siete = bcchapi.Siete(user, password)
-    today = datetime.now()
-    today = today.strftime("%Y-%m-%d")
-    cuadro = siete.cuadro(
-        series=["F073.TCO.PRE.Z.D"],
-        nombres = ["dolar"],
-        desde = today,
-        hasta = today,
-        observado = {"dolar":"last"}
-    )
+    try:
+        # Configuración de proxy (si es necesario en PythonAnywhere)
+        proxies = {
+            'http': 'http://proxy.server:3128',  # Reemplaza con el proxy correcto
+            'https': 'http://proxy.server:3128',
+        }
+        auth = HTTPProxyAuth('usuario_proxy', 'contraseña_proxy')  # Si requiere autenticación
 
-    if not cuadro.empty:
-        valor_dolar = cuadro.iloc[0]["dolar"]
-    else:
-        valor_dolar = 0
+        # Tu lógica actual para consultar la API del Banco Central
+        # Ejemplo (ajusta según tu implementación real):
+        response = requests.get(
+            "https://si3.bcentral.cl/SieteRestWS/SieteRestWS.ashx",
+            params={
+                'user': 'es.ibarra@duocuc.cl',
+                'pass': 'Uwu7832!',
+                'firstdate': '2025-06-23',
+                'lastdate': '2025-06-23',
+                'timeseries': 'F073.TCO.PRE.Z.D',
+                'function': 'GetSeries'
+            },
+            proxies=proxies,
+            auth=auth,
+            timeout=10  # Evita esperas infinitas
+        )
+        response.raise_for_status()  # Lanza error si la respuesta no es 200 OK
+        datos = response.json()
+        return datos["valor_dolar"]  # Ajusta según la estructura real de la respuesta
 
-    return valor_dolar
+    except Exception as e:
+        print(f"Error al obtener el dólar: {e}")
+        return 950  # Valor por defecto si falla
 #Tienda y funcion banco Central
 @login_required
 def tienda(request):
@@ -216,7 +231,8 @@ def generarPedido(request):
         
         # Para otros métodos de pago
         else:
-            return procesar_pedido_completo(request, pedido_obj, carrito, estado_pedido='pendiente')
+
+            return redirect('formulario_transferencia', id_pedido=pedido_obj.id_pedido)
 
     return redirect('carrito')
 
@@ -457,3 +473,116 @@ def enviar_link_recuperacion(request, usuario):
     email.content_subtype = "html"
     email.send()
 
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.contrib import messages
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Pedido
+
+def formulario_transferencia(request, id_pedido):
+    pedido = get_object_or_404(Pedido, id_pedido=id_pedido)
+    
+    # Datos bancarios ficticios (compartidos para GET y POST si hay error)
+    datos_bancarios = {
+        'banco': 'Banco Ficticio',
+        'tipo_cuenta': 'Cuenta Corriente',
+        'numero_cuenta': '1234-5678-9012-3456',
+        'rut_titular': '12.345.678-9',
+        'nombre_titular': 'Ferretería Ferremas',
+        'email_contacto': 'transferencias@ferremas.com',
+        'monto': pedido.total
+    }
+
+    # --- MANEJO DE POST (envío del formulario) ---
+    if request.method == 'POST':
+        comprobante = request.FILES.get('comprobante')
+        comentarios = request.POST.get('comentarios', '')
+        
+        # Validación básica
+        if not comprobante:
+            messages.error(request, "Debes subir un comprobante de transferencia")
+            return render(request, 'formulario_transferencia.html', {
+                'pedido': pedido,
+                'datos_bancarios': datos_bancarios,
+                'comentarios': comentarios
+            })
+
+        # Validar tipo de archivo (ejemplo básico)
+        allowed_types = ['application/pdf', 'image/jpeg', 'image/png']
+        if comprobante.content_type not in allowed_types:
+            messages.error(request, "Formato de archivo no válido. Sube PDF, JPG o PNG")
+            return render(request, 'formulario_transferencia.html', {
+                'pedido': pedido,
+                'datos_bancarios': datos_bancarios,
+                'comentarios': comentarios
+            })
+
+        # Actualizar estado del pedido
+        pedido.estado = 'pendiente_verificacion'
+        pedido.save()
+
+        try:
+            # --- ENVÍO DE CORREO AL CLIENTE ---
+            subject_cliente = f'Recibimos tu comprobante - Pedido #{pedido.id_pedido}'
+            body_cliente = render_to_string('email_confirmacion_cliente.html', {
+                'pedido': pedido,
+                'usuario': request.user,
+                'comentarios': comentarios,
+                'datos_bancarios': datos_bancarios
+            })
+
+            email_cliente = EmailMessage(
+                subject_cliente,
+                body_cliente,
+                'pruebaskk1221@gmail.com',  # Remitente
+                [request.user.email],       # Destinatario
+            )
+            email_cliente.content_subtype = "html"
+            email_cliente.attach(
+                comprobante.name,
+                comprobante.read(),
+                comprobante.content_type
+            )
+            email_cliente.send()
+
+            # --- ENVÍO DE CORREO AL ADMINISTRADOR ---
+            subject_admin = f'Nuevo comprobante - Pedido #{pedido.id_pedido}'
+            body_admin = render_to_string('email_notificacion_admin.html', {
+                'pedido': pedido,
+                'usuario': request.user,
+                'comentarios': comentarios,
+                'datos_bancarios': datos_bancarios
+            })
+
+            email_admin = EmailMessage(
+                subject_admin,
+                body_admin,
+                'pruebaskk1221@gmail.com',  # Remitente
+                ['pruebaskk1221@gmail.com'],  # Correo admin
+            )
+            email_admin.content_subtype = "html"
+            comprobante.seek(0)  # Reiniciar lectura del archivo
+            email_admin.attach(
+                comprobante.name,
+                comprobante.read(),
+                comprobante.content_type
+            )
+            email_admin.send()
+
+            messages.success(request, "¡Comprobante recibido! Hemos enviado un correo de confirmación.")
+            return render(request, 'espera_confirmacion.html', {'pedido': pedido})
+
+        except Exception as e:
+            # Si falla el envío de correos pero el pedido se registró
+            messages.warning(
+                request,
+                "Recibimos tu comprobante pero hubo un error al enviar los correos. " +
+                f"Error: {str(e)}. Por favor contáctanos."
+            )
+            return render(request, 'espera_confirmacion.html', {'pedido': pedido})
+
+    # --- MANEJO DE GET (mostrar formulario) ---
+    return render(request, 'formulario_transferencia.html', {
+        'pedido': pedido,
+        'datos_bancarios': datos_bancarios
+    })
